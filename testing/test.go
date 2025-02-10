@@ -4,31 +4,40 @@ import (
 	"context"
 	"fmt"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/workflow"
 	"log"
+	"time"
 )
 
-//func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
-//	options := workflow.ActivityOptions{
-//		StartToCloseTimeout: time.Second * 5,
-//	}
-//
-//	ctx = workflow.WithActivityOptions(ctx, options)
-//
-//	fmt.Printf("Execute Activity - ComposeGreeting: %s, \n", name)
-//	var result string
-//	err := workflow.ExecuteActivity(ctx, ComposeGreeting, name).Get(ctx, &result)
-//	if err != nil {
-//		return result, fmt.Errorf("ComposeGreeting failed: %w", err)
-//	}
-//
-//	return result, err
-//}
-//
-//func ComposeGreeting(ctx context.Context, name string) (string, error) {
-//	greeting := fmt.Sprintf("Hello %s!", name)
-//	fmt.Printf("Execute ComposeGreeting: %s, \n", greeting)
-//	return greeting, nil
-//}
+func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
+	options := workflow.ActivityOptions{
+		StartToCloseTimeout: time.Second * 5,
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval:    time.Second,
+			BackoffCoefficient: 2.0,
+			MaximumInterval:    time.Second * 100,
+			MaximumAttempts:    3,
+		},
+	}
+
+	ctx = workflow.WithActivityOptions(ctx, options)
+
+	fmt.Printf("Execute Activity - ComposeGreeting: %s, \n", name)
+	var result string
+	err := workflow.ExecuteActivity(ctx, ComposeGreeting, name).Get(ctx, &result)
+	if err != nil {
+		return result, fmt.Errorf("ComposeGreeting failed: %w", err)
+	}
+
+	return result, err
+}
+
+func ComposeGreeting(ctx context.Context, name string) (string, error) {
+	greeting := fmt.Sprintf("Hello %s!", name)
+	fmt.Printf("Execute ComposeGreeting: %s, \n", greeting)
+	return greeting, nil
+}
 
 func main() {
 
@@ -47,12 +56,16 @@ func main() {
 		TaskQueue: "tdws-demo",
 	}
 
+	fmt.Println("Start the Workflow")
+
 	// Start the Workflow
 	name := "World"
 	we, err := c.ExecuteWorkflow(context.Background(), options, GreetingWorkflow, name)
 	if err != nil {
 		log.Fatalln("unable to complete Workflow", err)
 	}
+
+	fmt.Println("Get the results")
 
 	// Get the results
 	var greeting string

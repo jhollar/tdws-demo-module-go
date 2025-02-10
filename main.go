@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"time"
@@ -13,6 +14,12 @@ import (
 func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
 	options := workflow.ActivityOptions{
 		StartToCloseTimeout: time.Second * 5,
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval:    time.Second,
+			BackoffCoefficient: 2.0,
+			MaximumInterval:    time.Second * 100,
+			MaximumAttempts:    3,
+		},
 	}
 
 	ctx = workflow.WithActivityOptions(ctx, options)
@@ -47,7 +54,7 @@ func ComposeGreeting(ctx context.Context, name string) (string, error) {
 }
 
 func TdwsRegister(w worker.Worker) {
-	
+
 	fmt.Println("TdwsRegister Invoked")
 
 	w.RegisterWorkflow(GreetingWorkflow)
