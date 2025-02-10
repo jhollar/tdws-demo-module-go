@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
+	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"log"
 	"time"
 )
 
 func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
+	// Increased timeout and added better retry configuration
 	options := workflow.ActivityOptions{
-		StartToCloseTimeout: time.Second * 5,
+		StartToCloseTimeout:    time.Second * 30, // Increased from 5 seconds to 30 seconds
+		ScheduleToCloseTimeout: time.Minute * 5,  // Added overall timeout
 		RetryPolicy: &temporal.RetryPolicy{
 			InitialInterval:    time.Second,
 			BackoffCoefficient: 2.0,
@@ -23,28 +26,30 @@ func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
 
 	ctx = workflow.WithActivityOptions(ctx, options)
 
-	fmt.Printf("Execute Activity - ComposeGreeting: %s, \n", name)
 	var result string
+	logger := workflow.GetLogger(ctx)
+	logger.Info("Starting ComposeGreeting activity", "name", name)
+
 	err := workflow.ExecuteActivity(ctx, ComposeGreeting, name).Get(ctx, &result)
 	if err != nil {
-		return result, fmt.Errorf("ComposeGreeting failed: %w", err)
+		logger.Error("ComposeGreeting activity failed", "error", err)
+		return "", fmt.Errorf("ComposeGreeting failed: %w", err)
 	}
 
-	return result, err
+	return result, nil
 }
 
 func ComposeGreeting(ctx context.Context, name string) (string, error) {
+	// Using simple logging for the activity since we're in a non-workflow context
 	greeting := fmt.Sprintf("Hello %s!", name)
-	fmt.Printf("Execute ComposeGreeting: %s, \n", greeting)
+	log.Printf("Composing greeting: %s", greeting)
 	return greeting, nil
 }
 
 func main() {
-
-	// Create the client object just once per process
 	c, err := client.Dial(client.Options{
-		HostPort:  "192.168.1.233:7233", // Default for local Temporal server
-		Namespace: "network-usecases",   // Specify the namespace
+		HostPort:  "192.168.1.233:7233",
+		Namespace: "network-usecases",
 	})
 	if err != nil {
 		log.Fatalln("unable to create Temporal client", err)
@@ -54,20 +59,29 @@ func main() {
 	options := client.StartWorkflowOptions{
 		ID:        "greeting-workflow",
 		TaskQueue: "tdws-demo",
+		// Added workflow timeout
+		WorkflowExecutionTimeout: time.Minute * 10,
 	}
 
-	fmt.Println("Start the Workflow")
+	// Create a worker
+	w := worker.New(c, "tdws-demo", worker.Options{})
 
-	// Start the Workflow
+	// Register workflow and activity
+	w.RegisterWorkflow(GreetingWorkflow)
+	w.RegisterActivity(ComposeGreeting)
+
+	// Start listening to the Task Queue
+	err = w.Run(worker.InterruptCh())
+	if err != nil {
+		log.Fatalln("unable to start Worker", err)
+	}
+
 	name := "World"
 	we, err := c.ExecuteWorkflow(context.Background(), options, GreetingWorkflow, name)
 	if err != nil {
-		log.Fatalln("unable to complete Workflow", err)
+		log.Fatalln("unable to start Workflow", err)
 	}
 
-	fmt.Println("Get the results")
-
-	// Get the results
 	var greeting string
 	err = we.Get(context.Background(), &greeting)
 	if err != nil {
