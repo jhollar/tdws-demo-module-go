@@ -16,14 +16,19 @@ func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
 
 	ctx = workflow.WithActivityOptions(ctx, options)
 
+	fmt.Printf("Execute Activity - ComposeGreeting: %s, \n", name)
 	var result string
 	err := workflow.ExecuteActivity(ctx, ComposeGreeting, name).Get(ctx, &result)
+	if err != nil {
+		return result, fmt.Errorf("ComposeGreeting failed: %w", err)
+	}
 
 	return result, err
 }
 
 func ComposeGreeting(ctx context.Context, name string) (string, error) {
 	greeting := fmt.Sprintf("Hello %s!", name)
+	fmt.Printf("Execute ComposeGreeting: %s, \n", greeting)
 	return greeting, nil
 }
 
