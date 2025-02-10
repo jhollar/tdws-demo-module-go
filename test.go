@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go.temporal.io/sdk/client"
 	"log"
+	"tdws-demo-module-go/components"
 )
 
 func main() {
@@ -23,7 +24,7 @@ func main() {
 
 	// Start the Workflow
 	name := "World"
-	we, err := c.ExecuteWorkflow(context.Background(), options, GreetingWorkflow, name)
+	we, err := c.ExecuteWorkflow(context.Background(), options, components.GreetingWorkflow, name)
 	if err != nil {
 		log.Fatalln("unable to complete Workflow", err)
 	}
