@@ -4,13 +4,36 @@ import (
 	"context"
 	"fmt"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/workflow"
 	"log"
+	"time"
 )
+
+func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
+	options := workflow.ActivityOptions{
+		StartToCloseTimeout: time.Second * 5,
+	}
+
+	ctx = workflow.WithActivityOptions(ctx, options)
+
+	var result string
+	err := workflow.ExecuteActivity(ctx, ComposeGreeting, name).Get(ctx, &result)
+
+	return result, err
+}
+
+func ComposeGreeting(ctx context.Context, name string) (string, error) {
+	greeting := fmt.Sprintf("Hello %s!", name)
+	return greeting, nil
+}
 
 func main() {
 
 	// Create the client object just once per process
-	c, err := client.Dial(client.Options{})
+	c, err := client.Dial(client.Options{
+		HostPort:  "192.168.1.233:7233", // Default for local Temporal server
+		Namespace: "network-usecases",   // Specify the namespace
+	})
 	if err != nil {
 		log.Fatalln("unable to create Temporal client", err)
 	}
