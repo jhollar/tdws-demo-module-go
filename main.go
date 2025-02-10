@@ -47,8 +47,13 @@ func ComposeGreeting(ctx context.Context, name string) (string, error) {
 }
 
 func TdwsRegister(w worker.Worker) {
+	
+	fmt.Println("TdwsRegister Invoked")
+
 	w.RegisterWorkflow(GreetingWorkflow)
 	w.RegisterWorkflow(GoodbyeWorkflow)
 	w.RegisterActivity(ComposeGreeting)
 	w.RegisterActivity(ComposeGoodbye)
+
+	fmt.Println("TdwsRegister Return")
 }
