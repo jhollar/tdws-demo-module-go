@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"log"
 	"time"
@@ -63,18 +62,18 @@ func main() {
 		WorkflowExecutionTimeout: time.Minute * 10,
 	}
 
-	// Create a worker
-	w := worker.New(c, "tdws-demo", worker.Options{})
-
-	// Register workflow and activity
-	w.RegisterWorkflow(GreetingWorkflow)
-	w.RegisterActivity(ComposeGreeting)
-
-	// Start listening to the Task Queue
-	err = w.Run(worker.InterruptCh())
-	if err != nil {
-		log.Fatalln("unable to start Worker", err)
-	}
+	//// Create a worker
+	//w := worker.New(c, "tdws-demo", worker.Options{})
+	//
+	//// Register workflow and activity
+	//w.RegisterWorkflow(GreetingWorkflow)
+	//w.RegisterActivity(ComposeGreeting)
+	//
+	//// Start listening to the Task Queue
+	//err = w.Run(worker.InterruptCh())
+	//if err != nil {
+	//	log.Fatalln("unable to start Worker", err)
+	//}
 
 	name := "World"
 	we, err := c.ExecuteWorkflow(context.Background(), options, GreetingWorkflow, name)
