@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 	"log"
 	"time"
@@ -15,11 +16,16 @@ func ComposeGreeting(ctx context.Context, name string) (string, error) {
 }
 
 func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
-	//options := workflow.ActivityOptions{
-	//	StartToCloseTimeout: time.Second * 5,
-	//}
-	options := workflow.ActivityOptions{}
-
+	options := workflow.ActivityOptions{
+		StartToCloseTimeout:    time.Second * 30, // Increased from 5 seconds to 30 seconds
+		ScheduleToCloseTimeout: time.Minute * 5,  // Added overall timeout
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval:    time.Second,
+			BackoffCoefficient: 2.0,
+			MaximumInterval:    time.Second * 100,
+			MaximumAttempts:    3,
+		},
+	}
 	ctx = workflow.WithActivityOptions(ctx, options)
 
 	var result string
