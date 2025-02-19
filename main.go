@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
 	"time"
@@ -11,24 +10,19 @@ import (
 
 // == Workflow ==
 
-func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
-	options := workflow.ActivityOptions{
-		StartToCloseTimeout: time.Second * 5,
-		RetryPolicy: &temporal.RetryPolicy{
-			InitialInterval:    time.Second,
-			BackoffCoefficient: 2.0,
-			MaximumInterval:    time.Second * 100,
-			MaximumAttempts:    3,
-		},
-	}
+//func GreetingWorkflow(ctx workflow.Context, name string) (string, error) {
+//	options := workflow.ActivityOptions{
+//		StartToCloseTimeout: time.Second * 5,
+//	}
+//
+//	ctx = workflow.WithActivityOptions(ctx, options)
+//
+//	var result string
+//	err := workflow.ExecuteActivity(ctx, ComposeGreeting, name).Get(ctx, &result)
+//
+//	return result, err
+//}
 
-	ctx = workflow.WithActivityOptions(ctx, options)
-
-	var result string
-	err := workflow.ExecuteActivity(ctx, ComposeGreeting, name).Get(ctx, &result)
-
-	return result, err
-}
 func GoodbyeWorkflow(ctx workflow.Context, name string) (string, error) {
 	options := workflow.ActivityOptions{
 		StartToCloseTimeout: time.Second * 5,
@@ -48,10 +42,10 @@ func ComposeGoodbye(ctx context.Context, name string) (string, error) {
 	return greeting, nil
 }
 
-func ComposeGreeting(ctx context.Context, name string) (string, error) {
-	greeting := fmt.Sprintf("Hello %s!", name)
-	return greeting, nil
-}
+//func ComposeGreeting(ctx context.Context, name string) (string, error) {
+//	greeting := fmt.Sprintf("Hello %s!", name)
+//	return greeting, nil
+//}
 
 func TdwsRegister(w worker.Worker) {
 
